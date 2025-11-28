@@ -1,0 +1,8 @@
+{
+  "name": "Family Dinner Concierge",
+  "description": "A fine-dining ordering app for Jackson, Stella, Ai Ning, and Channing to coordinate their dinner choices.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}
