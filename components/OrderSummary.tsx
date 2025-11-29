@@ -9,28 +9,51 @@ interface OrderSummaryProps {
 const OrderSummary: React.FC<OrderSummaryProps> = ({ orders, onEdit }) => {
   const [copied, setCopied] = React.useState(false);
 
-  const generateTextSummary = () => {
-    let text = "🍽️ *Family Dinner Orders* 🍽️\n\n";
+  // Function to generate plain text content for the file download
+  const generateFileContent = () => {
+    let content = "DINNER ORDER SUMMARY\n";
+    content += "====================\n\n";
     
+    // Group by category for the kitchen
+    const soups: string[] = [];
+    const appetizers: string[] = [];
+    const mains: string[] = [];
+    const others: string[] = [];
+
+    // Detailed breakdown per person
     Object.values(orders).forEach((order: UserOrder) => {
-      text += `👤 *${order.userName}*\n`;
-      text += `🍲 Soup: ${order.soup?.name}\n`;
-      text += `🥗 Appetizer: ${order.appetizer?.name}\n`;
-      text += `🥩 Main: ${order.main?.name}\n`;
+      content += `[ ${order.userName} ]\n`;
+      content += `- Soup: ${order.soup?.name}\n`;
+      content += `- Appetizer: ${order.appetizer?.name}\n`;
+      content += `- Main: ${order.main?.name}\n`;
       if (order.aLaCarte.length > 0) {
-        text += `🍤 Add-ons: ${order.aLaCarte.map(i => i.name).join(', ')}\n`;
+        content += `- Add-ons: ${order.aLaCarte.map(i => i.name).join(', ')}\n`;
       }
       if (order.notes) {
-        text += `📝 Note: ${order.notes}\n`;
+        content += `- NOTE: ${order.notes}\n`;
       }
-      text += `-------------------\n`;
+      content += "\n";
     });
 
-    return text;
+    content += "====================\n";
+    content += `Total Guests: ${Object.keys(orders).length}\n`;
+    content += `Generated: ${new Date().toLocaleString()}\n`;
+    
+    return content;
+  };
+
+  const handleDownload = () => {
+    const element = document.createElement("a");
+    const file = new Blob([generateFileContent()], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `Dinner_Order_${new Date().toISOString().slice(0,10)}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   const handleCopy = () => {
-    const text = generateTextSummary();
+    const text = generateFileContent();
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -41,7 +64,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ orders, onEdit }) => {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
       <h2 className="text-4xl font-serif text-center text-ink mb-2">Order Summary</h2>
-      <p className="text-center text-gray-500 mb-8 font-sans">Ready to send to the restaurant</p>
+      <p className="text-center text-gray-500 mb-8 font-sans">Final review for restaurant staff</p>
 
       <div className="grid grid-cols-1 gap-6 mb-8">
         {FAMILY_MEMBERS.map(member => {
@@ -87,32 +110,31 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({ orders, onEdit }) => {
         })}
       </div>
 
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col md:flex-row items-center justify-center gap-4">
         {Object.keys(orders).length === 0 ? (
            <p className="text-gray-400 italic">No orders placed yet.</p>
         ) : (
-          <button
-            onClick={handleCopy}
-            className="flex items-center gap-2 bg-ink text-white px-8 py-4 rounded-full font-bold shadow-lg hover:bg-gray-800 transition-all"
-          >
-            {copied ? (
-              <>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                Copied to Clipboard!
-              </>
-            ) : (
-              <>
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" /></svg>
-                Copy for Restaurant Staff
-              </>
-            )}
-          </button>
-        )}
-        
-        {!allOrdered && Object.keys(orders).length > 0 && (
-            <p className="text-red-500 text-sm mt-2">Waiting for: {FAMILY_MEMBERS.filter(m => !orders[m]).join(", ")}</p>
+          <>
+            <button
+              onClick={handleCopy}
+              className="w-full md:w-auto flex items-center justify-center gap-2 bg-white border-2 border-ink text-ink px-8 py-3 rounded-full font-bold shadow hover:bg-gray-50 transition-all"
+            >
+              {copied ? 'Copied!' : 'Copy Text'}
+            </button>
+            <button
+              onClick={handleDownload}
+              className="w-full md:w-auto flex items-center justify-center gap-2 bg-ink text-white px-8 py-3 rounded-full font-bold shadow-lg hover:bg-gray-800 transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              Download File for Staff
+            </button>
+          </>
         )}
       </div>
+      
+      {!allOrdered && Object.keys(orders).length > 0 && (
+          <p className="text-center text-red-500 text-sm mt-6">Waiting for: {FAMILY_MEMBERS.filter(m => !orders[m]).join(", ")}</p>
+      )}
     </div>
   );
 };
